@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="logback-shared.xml"/>
+
+    <root level="INFO">
+        <appender-ref ref="SHARED_CONSOLE"/>
+        <appender-ref ref="SHARED_FILE"/>
+    </root>
+</configuration>
