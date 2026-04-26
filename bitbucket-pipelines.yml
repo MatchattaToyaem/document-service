@@ -45,6 +45,18 @@ definitions:
                 --yaml document-service.yaml
             fi
 
+          # Grant the container app's managed identity access to Key Vault
+          - |
+            PRINCIPAL_ID=$(az containerapp show \
+              --name document-service \
+              --resource-group ai-platform \
+              --query identity.principalId -o tsv)
+            az role assignment create \
+              --role "Key Vault Secrets User" \
+              --assignee "$PRINCIPAL_ID" \
+              --scope /subscriptions/53f34d3b-bdc7-4e68-89c4-0e4f1947eb31/resourceGroups/ai-platform/providers/Microsoft.KeyVault/vaults/ai-platform-keyvault-01 \
+              2>/dev/null || true
+
 pipelines:
   default:
     - step: *build-push
