@@ -50,7 +50,7 @@ properties:
           - name: SHAREPOINT_CLIENT_SECRET
             secretRef: sharepoint-client-secret
           - name: SHAREPOINT_TENANT_ID
-            value: "dcd857fa-da1c-42e4-801b-702d52e946b1"
+            value: "f6977a7f-41f8-4986-a28b-e453ee287f4a"
           - name: SHAREPOINT_HOST
             value: "oconnorservicescomau.sharepoint.com"
           - name: SHAREPOINT_SITE_NAME
