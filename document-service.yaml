@@ -1,0 +1,90 @@
+location: australiaeast
+resourceGroup: ai-platform
+type: Microsoft.App/containerApps
+name: document-service
+identity:
+  type: SystemAssigned
+properties:
+  environmentId: /subscriptions/53f34d3b-bdc7-4e68-89c4-0e4f1947eb31/resourceGroups/ai-platform/providers/Microsoft.App/managedEnvironments/managedEnvironment-aiplatform-8573
+  configuration:
+    registries:
+      - server: oconnoraiplatform.azurecr.io
+        username: oconnoraiplatform
+        passwordSecretRef: acr-password
+    secrets:
+      - name: acr-password
+        value: PLACEHOLDER_ACR
+      - name: jwt-secret
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/jwt-secret
+        identity: System
+      - name: jwt-issuer-uri
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/jwt-issuer-uri
+        identity: System
+      - name: sharepoint-client-id
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/sharepoint-client-id
+        identity: System
+      - name: sharepoint-client-secret
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/sharepoint-client-secret
+        identity: System
+    ingress:
+      external: true
+      targetPort: 8080
+      transport: http
+      allowInsecure: false
+  template:
+    containers:
+      - name: document-service
+        image: oconnoraiplatform.azurecr.io/document-service:latest
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "prod"
+          - name: JWT_SECRET
+            secretRef: jwt-secret
+          - name: JWT_ISSUER_URI
+            secretRef: jwt-issuer-uri
+          - name: SHAREPOINT_CLIENT_ID
+            secretRef: sharepoint-client-id
+          - name: SHAREPOINT_CLIENT_SECRET
+            secretRef: sharepoint-client-secret
+          - name: SHAREPOINT_TENANT_ID
+            value: "dcd857fa-da1c-42e4-801b-702d52e946b1"
+          - name: SHAREPOINT_HOST
+            value: "oconnorservicescomau.sharepoint.com"
+          - name: SHAREPOINT_SITE_NAME
+            value: "UoACapstoneProject"
+          - name: LOGGING_FILE_NAME
+            value: "/var/log/app/document-service.log"
+        volumeMounts:
+          - volumeName: app-logs
+            mountPath: /var/log/app
+
+      - name: filebeat
+        image: oconnoraiplatform.azurecr.io/filebeat:v5
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: ELASTICSEARCH_HOST
+            value: "http://elasticsearch.internal.proudground-90080d26.australiaeast.azurecontainerapps.io:80"
+          - name: ELASTICSEARCH_USERNAME
+            value: "elastic"
+          - name: ELASTICSEARCH_PASSWORD
+            value: "KZjpxzuWoYx41YLhggNx"
+          - name: APP_SERVICE
+            value: "document-service"
+          - name: INDEX_NAME
+            value: "document-service"
+        volumeMounts:
+          - volumeName: app-logs
+            mountPath: /var/log/app
+
+    volumes:
+      - name: app-logs
+        storageType: EmptyDir
+
+    scale:
+      minReplicas: 1
+      maxReplicas: 3

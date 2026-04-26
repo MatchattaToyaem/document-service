@@ -1,0 +1,55 @@
+image: atlassian/default-image:4
+
+definitions:
+  steps:
+    - step: &build-push
+        name: Build and Push to ACR
+        services:
+          - docker
+        script:
+          - echo $ACR_PASSWORD | docker login oconnoraiplatform.azurecr.io
+              --username $ACR_USERNAME
+              --password-stdin
+          - docker build
+              --build-arg AZURE_ARTIFACTS_FEED_URL=$AZURE_ARTIFACTS_FEED_URL
+              --build-arg AZURE_ARTIFACTS_PAT=$AZURE_ARTIFACTS_PAT
+              -t oconnoraiplatform.azurecr.io/document-service:$BITBUCKET_COMMIT .
+          - docker tag oconnoraiplatform.azurecr.io/document-service:$BITBUCKET_COMMIT
+              oconnoraiplatform.azurecr.io/document-service:latest
+          - docker push oconnoraiplatform.azurecr.io/document-service:$BITBUCKET_COMMIT
+          - docker push oconnoraiplatform.azurecr.io/document-service:latest
+
+    - step: &deploy
+        name: Deploy to Azure Container Apps
+        script:
+          - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+          - az login --service-principal
+              --username $AZURE_CLIENT_ID
+              --password $AZURE_CLIENT_SECRET
+              --tenant $AZURE_TENANT_ID
+
+          # Inject secrets into yaml
+          - sed -i "s/PLACEHOLDER_ACR/$ACR_PASSWORD/g" document-service.yaml
+
+          - sed -i "s|oconnoraiplatform.azurecr.io/document-service:latest|oconnoraiplatform.azurecr.io/document-service:$BITBUCKET_COMMIT|g" document-service.yaml
+          - |
+            if az containerapp show --name document-service --resource-group ai-platform 2>/dev/null; then
+              az containerapp update \
+                --name document-service \
+                --resource-group ai-platform \
+                --yaml document-service.yaml
+            else
+              az containerapp create \
+                --name document-service \
+                --resource-group ai-platform \
+                --yaml document-service.yaml
+            fi
+
+pipelines:
+  default:
+    - step: *build-push
+
+  branches:
+    master:
+      - step: *build-push
+      - step: *deploy
