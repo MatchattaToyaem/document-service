@@ -26,6 +26,15 @@ properties:
       - name: sharepoint-client-secret
         keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/sharepoint-client-secret
         identity: System
+      - name: db-url
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/db-url
+        identity: System
+      - name: db-username
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/db-username
+        identity: System
+      - name: db-password
+        keyVaultUrl: https://ai-platform-keyvault-01.vault.azure.net/secrets/db-password
+        identity: System
     ingress:
       external: true
       targetPort: 8080
@@ -55,6 +64,12 @@ properties:
             value: "oconnorservicescomau.sharepoint.com"
           - name: SHAREPOINT_SITE_NAME
             value: "UoACapstoneProject"
+          - name: DB_URL
+            secretRef: db-url
+          - name: DB_USERNAME
+            secretRef: db-username
+          - name: DB_PASSWORD
+            secretRef: db-password
           - name: LOGGING_FILE_NAME
             value: "/var/log/app/document-service.log"
         volumeMounts:
